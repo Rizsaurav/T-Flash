@@ -73,8 +73,6 @@ SUPABASE_ANON_KEY=your_supabase_key
 # n8n Webhook  
 N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/tflash  
 
-# Google OAuth  
-GOOGLE_CLIENT_ID=your_google_client_id  
 
 ### Install Web
 cd web
@@ -82,12 +80,10 @@ npm install
 npm run dev
 
 ### Set Up n8n Workflow 
-n8n can be installed via Docker or Desktop.
+n8n can be installed as:
 
-docker run -it --rm \
-  -p 5678:5678 \
-  -v ~/.n8n:/home/node/.n8n \
-  n8nio/n8n
+npm install -g n8n 
+
 
 ### Import Workflow
 

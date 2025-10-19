@@ -203,30 +203,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               SizedBox(height: 40),
               Center(
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
+                        blurRadius: 14,
+                        offset: Offset(0, 7),
                       ),
                     ],
                   ),
                   child: Text(
                     'T-FLASH',
                     style: TextStyle(
-                      fontSize: 64,
+                      fontSize: 38,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
-                      letterSpacing: 8,
+                      letterSpacing: 5,
                       shadows: [
                         Shadow(
-                          blurRadius: 10,
+                          blurRadius: 7,
                           color: Colors.black.withOpacity(0.5),
-                          offset: Offset(2, 2),
+                          offset: Offset(1.5, 1.5),
                         ),
                       ],
                     ),

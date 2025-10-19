@@ -1,0 +1,248 @@
+{
+  "name": "Send_automatic_email",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        96,
+        368
+      ],
+      "id": "de22b4c4-c0c6-4500-8ab7-574ffdc85930",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UteTg6rvpSijiErC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert news analyst and summarizer. Your primary task is to synthesize a collection of news articles on a single topic into a concise, 10-line \"flash news\" summary.\n\nYou will be given a JSON array of article objects from the previous step. For each article in the array, you must analyze the `title`, `description`, and `content` to extract the most critical information.\n\nDo not summarize each article individually. Instead, your goal is to identify the overarching themes, key events, significant figures, and important data points that appear across multiple articles. Weave these synthesized points together into a single, cohesive narrative.\n\nThe final output must be a single, well-written paragraph formatted to be exactly 10 lines long. It should be written in a professional, journalistic tone, suitable for a news briefing.\n\nOnly return the final 10-line summary paragraph. Do not include any preambles, conversational text, or explanations.\n\nHere are the articles to summarize:\n{{ JSON.stringify($json.articles) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        80
+      ],
+      "id": "00e92b43-1736-47ae-b393-62a6fea7433f",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "21m00Tcm4TlvDq8ikWAM",
+          "mode": "list",
+          "cachedResultName": "Rachel"
+        },
+        "text": "={{ $json.output }}",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        496,
+        80
+      ],
+      "id": "3c25b79f-1b81-4507-b08b-367def19c5ce",
+      "name": "Convert text to speech",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "VA7CHAW4mwp54NqA",
+          "name": "ElevenLabs account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get many rows').item.json.email }}",
+        "subject": "Summarized Audio News",
+        "emailType": "text",
+        "message": "=Hi user. Thank you for using our TFlash and subscribing to our newsletter. This email contains your everyday summary of news about the topic {{ $('Get many rows').item.json.topic }}. \n\nSincerely,\nAaditya Baniya",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        976,
+        80
+      ],
+      "id": "dcf62fe6-2ca9-4340-8109-533366e720ea",
+      "name": "Send a message",
+      "webhookId": "302c515d-ca89-4881-adac-f705092f1f44",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hhNRh8Vb8WmRFwPO",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        80
+      ],
+      "id": "30e06ff5-b65d-47ab-aa81-71902ef079cc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "subscribed_users",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        80
+      ],
+      "id": "9fe93a8d-6121-400b-a8db-21aced2d697e",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "EgYKqNxoYMqIOGcn",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.topic }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        80
+      ],
+      "id": "7e952956-4b93-4b97-873b-70bcf3e6a30b",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KmkZNFMznljwGAca",
+          "name": "Header Auth account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Convert text to speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert text to speech": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "274fb929-e330-4bcc-b348-1e0993d1730c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e8f5ecfc91bf2e1b3280b1985cb43bc7e8379508c3fce4894c52b2008b6b181"
+  },
+  "id": "4oTdUCz83C6YjL1y",
+  "tags": []
+}

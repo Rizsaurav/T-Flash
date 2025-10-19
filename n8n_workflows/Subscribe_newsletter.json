@@ -1,0 +1,178 @@
+{
+  "name": "Subscribe_newsletter",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "64ea20c2-3457-4a42-9a5e-9b7525030ded",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9cdb2880-a038-4f5f-9ac1-306417328f81",
+      "name": "Webhook",
+      "webhookId": "64ea20c2-3457-4a42-9a5e-9b7525030ded"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        848,
+        0
+      ],
+      "id": "d7acd9e2-6f55-4723-84e2-5d78fe3dae82",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eec80768-fbac-4120-bb89-1e96670e33d6",
+              "name": "body.email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "d82703a6-d083-4ec0-87d4-c46614a53587",
+              "name": "body.topic",
+              "value": "={{ $json.body.topic }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9e6e14bf-8ce4-45ad-b06e-0b8145b1008d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "tableId": "subscribed_users",
+        "dataToSend": "=defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.body.email }}"
+            },
+            {
+              "fieldId": "topic",
+              "fieldValue": "={{ $json.body.topic }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9ab7a06d-27a8-4b8d-97fa-f58c71665a81",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "EgYKqNxoYMqIOGcn",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.body.email }}",
+        "subject": "Thank you are subscribing to our daily newsletter",
+        "message": "=Welcome! Your daily audio news briefing is confirmed. Get ready to receive your personalized news file at 8 PM every day, focused on your favorite topic {{ $('Edit Fields').item.json.body.topic }}: . ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "65ef3f47-ec69-47f9-80be-5e378c80153d",
+      "name": "Send a message",
+      "webhookId": "de25fde6-59db-4097-ab32-8c6576a1742a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hhNRh8Vb8WmRFwPO",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1540895b-38f9-4d8a-acbd-ba1378428c44",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e8f5ecfc91bf2e1b3280b1985cb43bc7e8379508c3fce4894c52b2008b6b181"
+  },
+  "id": "2vx8IUlwar3h5XIq",
+  "tags": []
+}

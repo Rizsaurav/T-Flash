@@ -1,0 +1,426 @@
+{
+  "name": "Generate_audio",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "08c15529-05e8-4124-8a7d-57bdab95bf46",
+              "name": "name",
+              "value": "={{ $json.body.topics }}",
+              "type": "string"
+            },
+            {
+              "id": "b97ffe0d-f04b-4ebd-a385-b30dfdd464fa",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        160
+      ],
+      "id": "3efb57e5-f328-4dc9-966f-b90474af3478",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2416,
+        144
+      ],
+      "id": "aa28173e-1549-4338-ab5d-c520a3d83d5d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "21m00Tcm4TlvDq8ikWAM",
+          "mode": "list",
+          "cachedResultName": "Rachel"
+        },
+        "text": "={{ $json.output }}",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        160
+      ],
+      "id": "9da73a41-7c83-49d1-957b-58df940e82fe",
+      "name": "Convert text to speech",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "VA7CHAW4mwp54NqA",
+          "name": "ElevenLabs account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ JSON.parse($json.name)[0] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        160
+      ],
+      "id": "97ab949b-dd82-4705-8680-c6ef33a3e732",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KmkZNFMznljwGAca",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert news analyst and summarizer. Your primary task is to synthesize a collection of news articles on a single topic into a concise, 10-line \"flash news\" summary.\n\nYou will be given a JSON array of article objects from the previous step. For each article in the array, you must analyze the `title`, `description`, and `content` to extract the most critical information.\n\nDo not summarize each article individually. Instead, your goal is to identify the overarching themes, key events, significant figures, and important data points that appear across multiple articles. Weave these synthesized points together into a single, cohesive narrative.\n\nThe final output must be a single, well-written paragraph formatted to be exactly 10 lines long. It should be written in a professional, journalistic tone, suitable for a news briefing.\n\nOnly return the final 10-line summary paragraph. Do not include any preambles, conversational text, or explanations.\n\nHere are the articles to summarize:\n{{ JSON.stringify($json.articles) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        160
+      ],
+      "id": "f30d2b65-e863-4d77-988a-3a2a1ccdadf7",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        704,
+        464
+      ],
+      "id": "22d39e10-ea49-461b-9063-eadb69fdc713",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UteTg6rvpSijiErC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "eca35858-2cee-4af3-8265-709609c0ee9e",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        160
+      ],
+      "id": "465b2f2d-7bb9-4296-a1c5-381a312f1524",
+      "name": "Webhook",
+      "webhookId": "eca35858-2cee-4af3-8265-709609c0ee9e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://hsoqwektcoekatywejzf.supabase.co/storage/v1/object/audio-files/{{ $('Webhook').item.json.body.email }}/{{ $now.toMillis()}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhzb3F3ZWt0Y29la2F0eXdlanpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDczNjQ3NywiZXhwIjoyMDc2MzEyNDc3fQ.3WTUiGMuzR6U7K2p0ouyOymMEdUYN2Y_Y_lUFRuHxvA"
+            },
+            {
+              "name": "Content-Type",
+              "value": "audio/mp3"
+            },
+            {
+              "name": "x-upsert",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        160
+      ],
+      "id": "85c9699b-02ca-404a-95ca-58ea7a36e345",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hsoqwektcoekatywejzf.supabase.co/rest/v1/user_audio_files?select=*",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhzb3F3ZWt0Y29la2F0eXdlanpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDczNjQ3NywiZXhwIjoyMDc2MzEyNDc3fQ.3WTUiGMuzR6U7K2p0ouyOymMEdUYN2Y_Y_lUFRuHxvA"
+            },
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhzb3F3ZWt0Y29la2F0eXdlanpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDczNjQ3NywiZXhwIjoyMDc2MzEyNDc3fQ.3WTUiGMuzR6U7K2p0ouyOymMEdUYN2Y_Y_lUFRuHxvA"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user_id\": null,\n  \"file_path\": \"{{ $('HTTP Request').item.json['Key'] }}\",\n  \"bucket\": \"audio_files\",\n  \"file_url\": \"https://hsoqwektcoekatywejzf.supabase.co/storage/v1/object/public/{{ $('HTTP Request').item.json['Key'] }}\",\n  \"title\": \"{{ $('Webhook').item.json.body.topics[0] }}\",\n  \"topic\": \"general\",\n  \"duration_sec\": 0,\n  \"size_bytes\": 0,\n  \"format\": \"mp3\",\n  \"is_public\": true\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2128,
+        160
+      ],
+      "id": "d444a604-0443-47c2-a991-f82dfaeb056e",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "content": "## Trigger Webhook \nWhen \"Get News Now\" is clicked in the web app,  we start our n8n workflow",
+        "height": 144,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "fa7c15e1-9798-4e65-a283-3d2bcac91b0b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Fetching name and email\n",
+        "height": 144,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "c5d35a4d-de3a-4216-a969-7408d7da61a4",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Calling news api on a specific topic\n",
+        "height": 144,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "c112df2d-c5b4-447d-bec0-1dc646dac854",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## AI agent summarizing all the content from news api using Gemini 2.5 pro LLM",
+        "height": 144,
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        768,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "b8ed127e-5e6d-40e6-8a80-ecb0ba356bbb",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Converting summary into speech using ElevanLabs",
+        "height": 144,
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1168,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "7bbb247d-60da-4834-8c4e-9a3b80e40598",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Storing news mp3 into our supabase database",
+        "height": 144,
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1600,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "7af04a3f-5cef-4abd-a562-c50bba6d7c8b",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert text to speech": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Convert text to speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "116c72cd-8063-4709-82f1-faf22efab39b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e8f5ecfc91bf2e1b3280b1985cb43bc7e8379508c3fce4894c52b2008b6b181"
+  },
+  "id": "swQyIdoDdxTPsJG0",
+  "tags": []
+}

@@ -1,12 +1,10 @@
 "use client";
-
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export default function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
-
   const handleLogout = async () => {
     try {
       if (typeof window !== "undefined") localStorage.removeItem("guest_mode");
@@ -15,7 +13,6 @@ export default function LogoutButton({ className }: { className?: string }) {
       router.replace("/auth");
     }
   };
-
   return (
     <Button variant="outline" size="sm" className={className} onClick={handleLogout}>
       Log out

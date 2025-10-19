@@ -1,5 +1,5 @@
 import AuthGate from "@/components/auth-gate";
-import { OnboardingFlow } from "@/components/onboarding-flow";
+import { OnboardingFlow } from "@/Frontend/t-flash/app/page";
 
 export default function Home() {
   return (

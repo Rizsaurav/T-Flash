@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LibraryScreen extends StatefulWidget {
   @override
@@ -8,74 +9,54 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   final AudioPlayer audioPlayer = AudioPlayer();
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  List<Map<String, dynamic>> briefings = [];
   String? currentlyPlaying;
   bool isPlaying = false;
   Duration currentPosition = Duration.zero;
   Duration totalDuration = Duration.zero;
-
-  // Placeholder data matching your web app
-  final List<Map<String, dynamic>> briefings = [
-    {
-      'id': '1',
-      'title': 'Morning Briefing',
-      'date': 'Today, 7:00 AM',
-      'duration': 754,
-      'topics': ['Technology', 'Business', 'World'],
-      'status': 'new',
-    },
-    {
-      'id': '2',
-      'title': 'Afternoon Update',
-      'date': 'Today, 2:00 PM',
-      'duration': 525,
-      'topics': ['Politics', 'Sports'],
-      'status': 'scheduled',
-    },
-    {
-      'id': '3',
-      'title': 'Evening Digest',
-      'date': 'Yesterday, 6:00 PM',
-      'duration': 922,
-      'topics': ['Technology', 'Science', 'Health'],
-      'status': 'played',
-    },
-    {
-      'id': '4',
-      'title': 'Morning Briefing',
-      'date': 'Yesterday, 7:00 AM',
-      'duration': 678,
-      'topics': ['Business', 'World'],
-      'status': 'played',
-    },
-  ];
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    
-    audioPlayer.onPositionChanged.listen((position) {
-      setState(() => currentPosition = position);
+    _fetchAudios();
+
+    audioPlayer.onPositionChanged.listen((pos) {
+      setState(() => currentPosition = pos);
     });
-    
-    audioPlayer.onDurationChanged.listen((duration) {
-      setState(() => totalDuration = duration);
+
+    audioPlayer.onDurationChanged.listen((dur) {
+      setState(() => totalDuration = dur);
     });
-    
+
     audioPlayer.onPlayerStateChanged.listen((state) {
       setState(() => isPlaying = state == PlayerState.playing);
     });
   }
 
-  @override
-  void dispose() {
-    audioPlayer.dispose();
-    super.dispose();
+  Future<void> _fetchAudios() async {
+    try {
+      final response = await supabase
+          .from('user_audio_files')
+          .select('id, file_url, title, topic, created_at, duration_sec')
+          .order('created_at', ascending: false);
+
+      final data = List<Map<String, dynamic>>.from(response);
+      setState(() {
+        briefings = data;
+        loading = false;
+      });
+    } catch (e) {
+      print('Error fetching audios: $e');
+      setState(() => loading = false);
+    }
   }
 
-  void playBriefing(Map<String, dynamic> briefing) {
+  void playBriefing(Map<String, dynamic> briefing) async {
     setState(() => currentlyPlaying = briefing['id']);
-    // Placeholder - replace with actual audio URL
-    // audioPlayer.play(UrlSource(briefing['audioUrl']));
+    await audioPlayer.play(UrlSource(briefing['file_url']));
   }
 
   void togglePlayPause() {
@@ -86,8 +67,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
   }
 
-  String formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
+  String formatDuration(dynamic seconds) {
+    if (seconds == null) return "--:--";
+    final minutes = (seconds ~/ 60);
     final secs = seconds % 60;
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
@@ -99,70 +81,69 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   @override
+  void dispose() {
+    audioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
+        title: const Text(
           'Library',
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),
-        iconTheme: IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
-      body: Column(
-        children: [
-          // Main content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Text(
-                      'Your Audio Library',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Your Audio Library',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Browse your personalized news briefings',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ...briefings.map(_buildBriefingCard),
+                      ],
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Browse your personalized news briefings',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    SizedBox(height: 24),
-                    
-                    // Briefings list
-                    ...briefings.map((briefing) => _buildBriefingCard(briefing)),
-                  ],
+                  ),
                 ),
-              ),
+                if (currentlyPlaying != null) _buildAudioPlayerBar(),
+              ],
             ),
-          ),
-          
-          // Audio player bar (if playing)
-          if (currentlyPlaying != null) _buildAudioPlayerBar(),
-        ],
-      ),
     );
   }
 
   Widget _buildBriefingCard(Map<String, dynamic> briefing) {
     final isCurrentlyPlaying = currentlyPlaying == briefing['id'];
-    
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -171,158 +152,60 @@ class _LibraryScreenState extends State<LibraryScreen> {
           width: isCurrentlyPlaying ? 2 : 1,
         ),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: GestureDetector(
+          onTap: () => playBriefing(briefing),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.play_arrow, color: Colors.white),
+          ),
+        ),
+        title: Text(
+          briefing['title'] ?? 'Untitled Audio',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 6),
             Row(
               children: [
-                // Play button
-                GestureDetector(
-                  onTap: () => playBriefing(briefing),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
+                const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  formatDuration(briefing['duration_sec']),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-                SizedBox(width: 16),
-                
-                // Title and metadata
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              briefing['title'],
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          if (briefing['status'] == 'new')
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'New',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.blue[700],
-                                ),
-                              ),
-                            ),
-                          if (briefing['status'] == 'scheduled')
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.amber[50],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Scheduled',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.amber[700],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today,
-                              size: 12, color: Colors.grey[600]),
-                          SizedBox(width: 4),
-                          Text(
-                            briefing['date'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Icon(Icons.access_time,
-                              size: 12, color: Colors.grey[600]),
-                          SizedBox(width: 4),
-                          Text(
-                            formatDuration(briefing['duration']),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Add to queue button
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Added to queue'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.playlist_add, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  DateTime.tryParse(briefing['created_at'] ?? '') != null
+                      ? DateTime.parse(briefing['created_at'])
+                          .toLocal()
+                          .toString()
+                          .substring(0, 16)
+                      : '',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
-            
-            SizedBox(height: 12),
-            
-            // Topics
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: (briefing['topics'] as List<String>).map((topic) {
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Text(
-                    topic,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+            const SizedBox(height: 6),
+            if (briefing['topic'] != null)
+              Text(
+                '#${briefing['topic']}',
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
           ],
         ),
       ),
@@ -330,11 +213,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildAudioPlayerBar() {
-    final currentBriefing = briefings.firstWhere(
-      (b) => b['id'] == currentlyPlaying,
-      orElse: () => briefings[0],
-    );
-    
+    final currentBriefing =
+        briefings.firstWhere((b) => b['id'] == currentlyPlaying);
     final progress = totalDuration.inSeconds > 0
         ? currentPosition.inSeconds / totalDuration.inSeconds
         : 0.0;
@@ -346,37 +226,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Progress bar
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
-              activeTrackColor: Colors.black87,
-              inactiveTrackColor: Colors.grey[300],
-              thumbColor: Colors.black87,
-            ),
-            child: Slider(
-              value: progress.clamp(0.0, 1.0),
-              onChanged: (value) {
-                final position = totalDuration * value;
-                audioPlayer.seek(position);
-              },
-            ),
+          Slider(
+            value: progress.clamp(0.0, 1.0),
+            onChanged: (v) =>
+                audioPlayer.seek(totalDuration * v.clamp(0.0, 1.0)),
+            activeColor: Colors.black87,
+            inactiveColor: Colors.grey[300],
           ),
-          
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                // Play/Pause button
                 IconButton(
                   onPressed: togglePlayPause,
                   icon: Icon(
@@ -384,53 +251,38 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     size: 32,
                   ),
                 ),
-                
-                SizedBox(width: 12),
-                
-                // Track info
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        currentBriefing['title'],
-                        style: TextStyle(
+                        currentBriefing['title'] ?? 'Now Playing',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
                       Text(
                         '${formatPosition(currentPosition)} / ${formatPosition(totalDuration)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
                   ),
                 ),
-                
-                // Skip backward
                 IconButton(
-                  onPressed: () {
-                    final newPosition = currentPosition - Duration(seconds: 10);
-                    audioPlayer.seek(newPosition);
-                  },
-                  icon: Icon(Icons.replay_10),
+                  onPressed: () => audioPlayer
+                      .seek(currentPosition - const Duration(seconds: 10)),
+                  icon: const Icon(Icons.replay_10),
                 ),
-                
-                // Skip forward
                 IconButton(
-                  onPressed: () {
-                    final newPosition = currentPosition + Duration(seconds: 10);
-                    audioPlayer.seek(newPosition);
-                  },
-                  icon: Icon(Icons.forward_10),
+                  onPressed: () => audioPlayer
+                      .seek(currentPosition + const Duration(seconds: 10)),
+                  icon: const Icon(Icons.forward_10),
                 ),
               ],
             ),

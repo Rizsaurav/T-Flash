@@ -66,11 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black87)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.black87)),
           ),
         ],
       ),
@@ -88,23 +88,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title:
-            const Text('InsidePulse', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('T-FLASH', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
           TextButton.icon(
             onPressed: handleLogout,
-            icon: const Icon(Icons.logout, size: 18, color: Colors.grey),
-            label: const Text('Logout', style: TextStyle(color: Colors.grey)),
+            icon: const Icon(Icons.logout, size: 18, color: Colors.black87),
+            label: const Text('Logout', style: TextStyle(color: Colors.black87)),
           ),
         ],
       ),
       drawer: AppDrawer(onLogout: handleLogout),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.black87))
           : latestAudio == null
               ? _emptyState()
               : _buildHeroAudio(),
@@ -142,9 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 width: 96,
                 height: 96,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.black87,
                   shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
                 ),
                 child: Icon(
                   isPlaying ? Icons.pause : Icons.play_arrow,
@@ -167,10 +168,11 @@ class _HomeScreenState extends State<HomeScreen> {
               label: const Text('Go to Library'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black87,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -186,8 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.library_music_outlined,
-                size: 80, color: Colors.grey),
+            const Icon(Icons.library_music_outlined, size: 80, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'No audio generated yet',
@@ -211,10 +212,11 @@ class _HomeScreenState extends State<HomeScreen> {
               label: const Text('Open Library'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black87,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -235,25 +237,24 @@ class AppDrawer extends StatelessWidget {
     final user = authService.currentUser;
 
     return Drawer(
+      backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
           children: [
             ListTile(
-              leading: const Icon(Icons.radio, color: Colors.blue),
-              title: const Text('InsidePulse',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(user?.email ?? 'Guest',
-                  style: const TextStyle(fontSize: 12)),
+              leading: const Icon(Icons.radio, color: Colors.black87),
+              title: const Text('T-FLASH', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+              subtitle: Text(user?.email ?? 'Guest', style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ),
-            const Divider(),
+            const Divider(color: Colors.grey),
             ListTile(
-              leading: const Icon(Icons.home_outlined),
-              title: const Text('Home'),
+              leading: const Icon(Icons.home_outlined, color: Colors.black87),
+              title: const Text('Home', style: TextStyle(color: Colors.black87)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.library_music_outlined),
-              title: const Text('Library'),
+              leading: const Icon(Icons.library_music_outlined, color: Colors.black87),
+              title: const Text('Library', style: TextStyle(color: Colors.black87)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -265,7 +266,7 @@ class AppDrawer extends StatelessWidget {
             const Spacer(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.grey),
-              title: const Text('Sign Out'),
+              title: const Text('Sign Out', style: TextStyle(color: Colors.grey)),
               onTap: onLogout,
             ),
           ],

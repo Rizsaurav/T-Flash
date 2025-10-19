@@ -13,6 +13,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   List<Map<String, dynamic>> briefings = [];
   String? currentlyPlaying;
+  String? hoveredBriefing;
   bool isPlaying = false;
   Duration currentPosition = Duration.zero;
   Duration totalDuration = Duration.zero;
@@ -142,71 +143,76 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildBriefingCard(Map<String, dynamic> briefing) {
     final isCurrentlyPlaying = currentlyPlaying == briefing['id'];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCurrentlyPlaying ? Colors.black87 : Colors.grey[200]!,
-          width: isCurrentlyPlaying ? 2 : 1,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: GestureDetector(
-          onTap: () => playBriefing(briefing),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white),
+    final isHovered = hoveredBriefing == briefing['id'];
+    
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => hoveredBriefing = briefing['id']),
+      onExit: (_) => setState(() => hoveredBriefing = null),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 12),
+        transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCurrentlyPlaying ? Colors.black87 : Colors.grey[200]!,
+            width: isCurrentlyPlaying ? 2 : 1,
           ),
-        ),
-        title: Text(
-          briefing['title'] ?? 'Untitled Audio',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 12, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  formatDuration(briefing['duration_sec']),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  DateTime.tryParse(briefing['created_at'] ?? '') != null
-                      ? DateTime.parse(briefing['created_at'])
-                          .toLocal()
-                          .toString()
-                          .substring(0, 16)
-                      : '',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            if (briefing['topic'] != null)
-              Text(
-                '#${briefing['topic']}',
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+          boxShadow: [
+            if (isHovered)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 12,
+                offset: Offset(0, 4),
               ),
           ],
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          leading: GestureDetector(
+            onTap: () => playBriefing(briefing),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.play_arrow, color: Colors.white),
+            ),
+          ),
+          title: Text(
+            briefing['title'] ?? 'Untitled Audio',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    formatDuration(briefing['duration_sec']),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (briefing['topic'] != null)
+                Text(
+                  '#${briefing['topic']}',
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+            ],
+          ),
         ),
       ),
     );

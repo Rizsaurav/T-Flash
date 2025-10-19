@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import 'auth_screen.dart';
+import 'library_screen.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -9,21 +12,65 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final authService = AuthService();
+  final supabase = Supabase.instance.client;
+  final AudioPlayer audioPlayer = AudioPlayer();
+
+  Map<String, dynamic>? latestAudio;
+  bool loading = true;
+  bool isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLatestAudio();
+
+    audioPlayer.onPlayerStateChanged.listen((state) {
+      setState(() => isPlaying = state == PlayerState.playing);
+    });
+  }
+
+  Future<void> _fetchLatestAudio() async {
+    try {
+      final response = await supabase
+          .from('user_audio_files')
+          .select('id, file_url, title, topic, created_at')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      setState(() {
+        latestAudio = response;
+        loading = false;
+      });
+    } catch (e) {
+      print('Error fetching latest audio: $e');
+      setState(() => loading = false);
+    }
+  }
+
+  void _playLatest() async {
+    if (latestAudio == null) return;
+    if (isPlaying) {
+      await audioPlayer.pause();
+    } else {
+      await audioPlayer.play(UrlSource(latestAudio!['file_url']));
+    }
+  }
 
   Future<void> handleLogout() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Sign Out'),
-        content: Text('Are you sure you want to sign out?'),
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Sign Out', style: TextStyle(color: Colors.red)),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -42,31 +89,136 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('InsidePulse', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('InsidePulse', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          // Logout button - low contrast
           TextButton.icon(
             onPressed: handleLogout,
-            icon: Icon(Icons.logout, size: 18, color: Colors.grey[700]),
-            label: Text(
-              'Logout',
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 14,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[700],
-            ),
+            icon: const Icon(Icons.logout, size: 18, color: Colors.grey),
+            label: const Text('Logout', style: TextStyle(color: Colors.grey)),
           ),
         ],
       ),
       drawer: AppDrawer(onLogout: handleLogout),
-      body: Center(
-        child: Text('Your content here'),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : latestAudio == null
+              ? _emptyState()
+              : _buildHeroAudio(),
+    );
+  }
+
+  Widget _buildHeroAudio() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Now Playing',
+            style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            latestAudio!['title'] ?? 'Untitled',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '#${latestAudio!['topic'] ?? 'general'}',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: GestureDetector(
+              onTap: _playLatest,
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPlaying ? Icons.pause : Icons.play_arrow,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LibraryScreen()),
+                );
+              },
+              icon: const Icon(Icons.library_music_outlined),
+              label: const Text('Go to Library'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.library_music_outlined,
+                size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'No audio generated yet',
+              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Generate one or visit your Library to explore more.',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LibraryScreen()),
+                );
+              },
+              icon: const Icon(Icons.library_music),
+              label: const Text('Open Library'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -81,168 +233,43 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final user = authService.currentUser;
-    final isGuest = authService.isGuestMode();
 
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            // Header
-            Container(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.radio, color: Colors.white, size: 28),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'InsidePulse',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            FutureBuilder<bool>(
-                              future: authService.isGuestMode(),
-                              builder: (context, snapshot) {
-                                final isGuest = snapshot.data ?? false;
-                                return Text(
-                                  isGuest ? 'Guest Mode' : user?.email ?? 'User',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            ListTile(
+              leading: const Icon(Icons.radio, color: Colors.blue),
+              title: const Text('InsidePulse',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(user?.email ?? 'Guest',
+                  style: const TextStyle(fontSize: 12)),
             ),
-            
-            Divider(height: 1),
-            
-            // Navigation Items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  DrawerItem(
-                    icon: Icons.home_outlined,
-                    label: 'Home',
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  DrawerItem(
-                    icon: Icons.library_music_outlined,
-                    label: 'Library',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Navigate to library
-                    },
-                  ),
-                  DrawerItem(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Schedule',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Navigate to schedule
-                    },
-                  ),
-                  DrawerItem(
-                    icon: Icons.trending_up_outlined,
-                    label: 'Trending',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Navigate to trending
-                    },
-                  ),
-                  DrawerItem(
-                    icon: Icons.settings_outlined,
-                    label: 'Settings',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Navigate to settings
-                    },
-                  ),
-                ],
-              ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.home_outlined),
+              title: const Text('Home'),
+              onTap: () => Navigator.pop(context),
             ),
-            
-            Divider(height: 1),
-            
-            // Logout button at bottom - low contrast
-            Container(
-              padding: EdgeInsets.all(12),
-              child: ListTile(
-                leading: Icon(Icons.logout, color: Colors.grey[700], size: 20),
-                title: Text(
-                  'Sign Out',
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  onLogout();
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              ),
+            ListTile(
+              leading: const Icon(Icons.library_music_outlined),
+              title: const Text('Library'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LibraryScreen()),
+                );
+              },
+            ),
+            const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.grey),
+              title: const Text('Sign Out'),
+              onTap: onLogout,
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, size: 22),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      onTap: onTap,
-      contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

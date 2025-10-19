@@ -82,7 +82,7 @@ export function OnboardingFlow() {
       <div className="w-full max-w-4xl space-y-12">
         <div className="space-y-4 text-center">
           <h1 className="font-mono text-5xl font-bold tracking-tight text-balance md:text-6xl lg:text-7xl">
-            InsidePulse
+            T-Flash
           </h1>
           <p className="text-xl text-muted-foreground text-balance md:text-2xl">
             Personalized audio news, delivered on your schedule

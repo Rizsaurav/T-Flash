@@ -8,7 +8,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "InsidePulse — Your Personalized Audio News",
+  title: "T-Flash — Your Personalized Audio News",
   description: "Get the news you care about, delivered to your ears",
   generator: "v0.app",
 }

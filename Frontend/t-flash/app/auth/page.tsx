@@ -50,7 +50,7 @@ export default function AuthPage() {
           <div className="rounded-full h-16 w-16 flex items-center justify-center border border-neutral-200">
             <span className="text-3xl">📻</span>
           </div>
-          <h1 className="mt-6 text-3xl font-bold text-neutral-900">InsidePulse</h1>
+          <h1 className="mt-6 text-3xl font-bold text-neutral-900">T-Flash</h1>
           <p className="mt-2 text-sm text-neutral-500">Your personalized news briefings</p>
         </div>
 

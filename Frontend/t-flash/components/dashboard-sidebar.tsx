@@ -34,7 +34,7 @@ export function DashboardSidebar() {
             <Radio className="size-4" />
           </div>
           <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-mono font-semibold">InsidePulse</span>
+            <span className="font-mono font-semibold">T-Flash</span>
             <span className="text-xs text-muted-foreground">Audio News</span>
           </div>
         </div>

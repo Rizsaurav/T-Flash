@@ -24,11 +24,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool isGenerating = false;
   bool _isSubscribing = false;
   String _subscriptionMessage = '';
+  String? _hoveredTopic;
 
   final topics = [
     'Technology', 'Politics', 'Business', 'Sports', 'Entertainment',
     'Science', 'Health', 'World News', 'Climate', 'Culture',
   ];
+
+  // Map of topics to background image URLs
+  final Map<String, String> topicImages = {
+    'Technology': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=600&fit=crop',
+    'Politics': 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=600&fit=crop',
+    'Business': 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&h=600&fit=crop',
+    'Sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=600&fit=crop',
+    'Entertainment': 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=400&h=600&fit=crop',
+    'Science': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=600&fit=crop',
+    'Health': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=600&fit=crop',
+    'World News': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=600&fit=crop',
+    'Climate': 'https://images.unsplash.com/photo-1569163139599-0f4517e36f51?w=400&h=600&fit=crop',
+    'Culture': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=600&fit=crop',
+  };
 
   @override
   void dispose() {
@@ -186,11 +201,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 40),
-              Text('InsidePulse', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+              Center(
+                child: Text('T-FLASH', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+              ),
               SizedBox(height: 8),
-              Text(
-                'Personalized audio news, delivered on your schedule',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+              Center(
+                child: Text(
+                  'Personalized audio news, delivered on your schedule',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
               ),
               SizedBox(height: 40),
               Text('What interests you?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
@@ -200,23 +220,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: topics.map((topic) {
-                  final isSelected = selectedTopics.contains(topic);
-                  return ChoiceChip(
-                    label: Text(topic),
-                    selected: isSelected,
-                    onSelected: (_) => toggleTopic(topic),
-                    selectedColor: Colors.blue,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  );
-                }).toList(),
-              ),
+              _buildTopicCards(),
               if (selectedTopics.isNotEmpty) ...[
                 SizedBox(height: 16),
                 Text(
@@ -260,7 +264,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               SizedBox(height: 32),
-              _buildNewsletterCard(), // Newsletter Card Added Here
+              _buildNewsletterCard(),
             ],
           ),
         ),
@@ -268,7 +272,140 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // New Widget for the Newsletter Subscription Form
+  // New widget for topic cards - horizontal scroll with hover effect and background images
+  Widget _buildTopicCards() {
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: topics.length,
+        itemBuilder: (context, index) {
+          final topic = topics[index];
+          final isSelected = selectedTopics.contains(topic);
+          final isHovered = _hoveredTopic == topic;
+          
+          return Padding(
+            padding: EdgeInsets.only(right: 12, top: 10, bottom: 10),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _hoveredTopic = topic),
+              onExit: (_) => setState(() => _hoveredTopic = null),
+              child: AnimatedScale(
+                scale: isHovered ? 1.08 : 1.0,
+                duration: Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                child: GestureDetector(
+                  onTap: () => toggleTopic(topic),
+                  child: Container(
+                    width: 140,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? Colors.blue : Colors.white,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        if (isSelected || isHovered)
+                          BoxShadow(
+                            color: isSelected 
+                                ? Colors.blue.withOpacity(0.4)
+                                : Colors.black.withOpacity(0.2),
+                            blurRadius: isHovered ? 12 : 8,
+                            offset: Offset(0, isHovered ? 6 : 4),
+                          ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(13),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background Image
+                          Image.network(
+                            topicImages[topic] ?? '',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: Icon(Icons.image, size: 50, color: Colors.grey[600]),
+                              );
+                            },
+                          ),
+                          // Gradient Overlay
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withOpacity(0.3),
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Selected Overlay
+                          if (isSelected)
+                            Container(
+                              color: Colors.blue.withOpacity(0.5),
+                            ),
+                          // Content
+                          Stack(
+                            children: [
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text(
+                                    topic,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          blurRadius: 4,
+                                          color: Colors.black.withOpacity(0.8),
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.check,
+                                      size: 18,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildNewsletterCard() {
     return Card(
       elevation: 2,
@@ -373,7 +510,7 @@ class AppDrawer extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('InsidePulse', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('T-FLASH', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         FutureBuilder<bool>(
                           future: authService.isGuestMode(),
                           builder: (context, snapshot) {

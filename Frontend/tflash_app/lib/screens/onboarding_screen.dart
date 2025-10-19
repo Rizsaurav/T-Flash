@@ -70,34 +70,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> getNewsNow() async {
     if (selectedTopics.isEmpty) return;
 
+    final userEmail = authService.currentUser?.email;
+
+    // Safety check: make sure the user is logged in
+    if (userEmail == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: You are not signed in.'),
+          backgroundColor: Colors.red,
+        ),
+    );
+    return;
+  }
+
     setState(() => isGenerating = true);
+
+
 
     try {
       final result = await N8nService.triggerWorkflow(
         topics: selectedTopics,
         briefingLength: briefingLength,
         deliveryTime: deliveryTime,
+        userEmail: userEmail, // <-- Pass the email here
       );
 
-      print('[Success] Workflow triggered: $result');
+      print('[Success] Workflow triggered successfully.');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Generating your briefing...'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // 2. Navigate to the LibraryScreen after success
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Your flash news is generated!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LibraryScreen()),
+        );
+      }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() => isGenerating = false);
+      if (mounted) {
+        setState(() => isGenerating = false);
+      }
     }
-  }
+    }
 
   String get selectedTopicLabels => selectedTopics
       .take(3)

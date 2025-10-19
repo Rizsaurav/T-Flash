@@ -3,10 +3,11 @@ import 'package:http/http.dart' as http;
 import '../config/env_config.dart';
 
 class N8nService {
-  static Future<Map<String, dynamic>> triggerWorkflow({
+  static Future<void> triggerWorkflow({
     required List<String> topics,
     required String briefingLength,
     required String deliveryTime,
+    required String userEmail,
   }) async {
     try {
       final response = await http.post(
@@ -17,13 +18,12 @@ class N8nService {
           'topics': topics,
           'briefingLength': briefingLength,
           'deliveryTime': deliveryTime,
+          'email': userEmail, // <-- ADD THIS LINE
           'timestamp': DateTime.now().toIso8601String(),
         }),
       );
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
+      if (response.statusCode != 200) {
         throw Exception('Failed to trigger workflow: ${response.statusCode}');
       }
     } catch (e) {

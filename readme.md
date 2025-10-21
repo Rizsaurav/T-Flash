@@ -59,7 +59,6 @@ User Action → n8n Webhook → NewsAPI → Gemini Summary → ElevenLabs Voice 
 
 ### 1. Clone the Repository
 
-
 git clone https://github.com/Rizsaurav/T-Flash.git
 cd T-Flash
 
@@ -117,4 +116,10 @@ Multi-language news summaries
 Offline listening mode
 
 
+### Images
 
+![alt text](images/image1.png)
+![alt text](images/image2.png)
+![alt text](images/image3.png)
+![alt text](images/image4.png)
+![alt text](images/image5.png)
